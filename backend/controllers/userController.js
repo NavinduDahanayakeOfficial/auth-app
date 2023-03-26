@@ -163,7 +163,93 @@ const getUser = asyncHandler(async (req, res) => {
 
 //update user
 const updateUser = asyncHandler(async (req, res) => {
-   
+   const user = await User.findById(req.user._id);
+
+   if (user) {
+      const { name, email, phone, photo, role, isVerified } = user;
+
+      user.email = req.body.email || email;
+      user.name = req.body.name || name;
+      user.phone = req.body.phone || phone;
+      user.photo = req.body.photo || photo;
+
+      //after updating user we need save the user
+
+      const updatedUser = await user.save();
+
+      res.status(200).json({
+         _id: updatedUser._id,
+         name: updatedUser.name,
+         email: updatedUser.email,
+         phone: updatedUser.phone,
+         photo: updatedUser.photo,
+         role: updatedUser.role,
+         isVerified: updatedUser.isVerified,
+      });
+   } else {
+      res.status(400);
+      throw new Error("user not found");
+   }
+});
+
+//delete user
+const deleteUser = asyncHandler(async (req, res) => {
+   const user = await User.findOneAndDelete({ _id: req.params.id });
+
+   if (!user) {
+      res.status(404);
+      throw new Error("User not found, please sign up");
+   }
+
+   res.status(200).json({ message: "User deleted successfully" });
+});
+
+//get all the users for admin management
+const getUsers = asyncHandler(async (req, res) => {
+   const users = await User.find().sort("-createdAt").select("-password"); //get all the users and sort them in created order. (don't fetch the password)
+
+   if (!users) {
+      res.status(500);
+      throw new Error("Something went wrong");
+   }
+
+   res.status(200).json(users);
+});
+
+//get logon status - to check whether user logged in or not
+const loginStatus = asyncHandler(async (req, res) => {
+   const token = req.cookies.token;
+
+   if (!token) {
+      return res.json(false);
+   }
+
+   //verify token
+   const verified = jwt.verify(token, process.env.JWT_SECRET);
+
+   if (verified) {
+      return res.json(true);
+   }
+
+   return res.json(false);
+});
+
+//change user role
+const changeUserRole = asyncHandler(async (req, res) => {
+   const { id, role } = req.body;
+
+   const user = await User.findById(id);
+
+   if (!user) {
+      res.status(404);
+      throw new Error("User not found");
+   }
+
+   user.role = role;
+
+   await user.save();
+
+   res.status(200).json({ message: ` User role updated to ${role}` });
 });
 
 module.exports = {
@@ -172,4 +258,8 @@ module.exports = {
    logoutUser,
    getUser,
    updateUser,
+   deleteUser,
+   getUsers,
+   loginStatus,
+   changeUserRole,
 };

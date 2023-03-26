@@ -34,7 +34,48 @@ const protect = asyncHandler(async (req, res, next) => {
       throw new Error("Not authorized, please login.");
    }
 });
+//can access by only a certain role
+const adminOnly =  asyncHandler(async (req, res, next) => {
+   if (req.user && req.user.role === "admin") {
+      next();
+   } else {
+      res.status(401);
+      throw new Error("Not authorized as an admin.");
+   }
+});
+
+//admin should be able to access whatever teacher can access
+const teacherOnly =  asyncHandler (async (req, res, next) => {
+   if (req.user.role === "teacher" || req.user.role === "admin") {
+      next();
+   } else {
+      res.status(401);
+      throw new Error("Not authorized as an teacher.");
+   }
+});
+
+const verifiedOnly =  asyncHandler( async (req, res, next) => {
+   if (req.user || req.user.isVerified) {
+      next();
+   } else {
+      res.status(401);
+      throw new Error("Not authorized, account not verified");
+   }
+});
+
+// const studentOnly = async (req,res,next) => {
+
+//    if(req.user && req.user.role === "student"){
+//       next();
+//    }else{
+//       res.status(401);
+//       throw new Error("Not authorized as an student.");
+//    }
+// }
 
 module.exports = {
    protect,
+   adminOnly,
+   teacherOnly,
+   verifiedOnly,
 };
